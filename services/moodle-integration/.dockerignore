@@ -1,0 +1,22 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+moodle-service
+
+# Test files
+*_test.go
+*.test
+
+# Development
+.git
+.gitignore
+README.md
+.env
+.vscode
+.idea
+
+# Dependencies (будут скачаны внутри контейнера)
+vendor/

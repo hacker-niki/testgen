@@ -1,0 +1,169 @@
+services:
+  # API Gateway
+  nginx:
+    build: ./nginx
+    container_name: testgen-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - auth
+      - generation
+      - testing
+      - moodle-integration
+      - frontend
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # Auth Service
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: testgen-auth
+    environment:
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=testgen_user
+      - DB_PASSWORD=testgen_password
+      - DB_NAME=testgen
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - PORT=8001
+    depends_on:
+      - mariadb
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # Generation Service (with AI Worker)
+  generation:
+    build:
+      context: ./services/generation
+      dockerfile: Dockerfile
+    container_name: testgen-generation
+    environment:
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=testgen_user
+      - DB_PASSWORD=testgen_password
+      - DB_NAME=testgen
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_URL=http://ollama:11434
+      - PORT=8002
+    depends_on:
+      - mariadb
+      - redis
+      - ollama
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # Testing Service
+  testing:
+    build:
+      context: ./services/testing
+      dockerfile: Dockerfile
+    container_name: testgen-testing
+    environment:
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=testgen_user
+      - DB_PASSWORD=testgen_password
+      - DB_NAME=testgen
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=8003
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # Moodle Integration Service
+  moodle-integration:
+    build:
+      context: ./services/moodle-integration
+      dockerfile: Dockerfile
+    container_name: testgen-moodle
+    environment:
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=testgen_user
+      - DB_PASSWORD=testgen_password
+      - DB_NAME=testgen
+      - PORT=8004
+      - DEBUG=false
+    depends_on:
+      - mariadb
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: testgen-frontend
+    environment:
+      - VITE_API_URL=http://localhost
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # MariaDB
+  mariadb:
+    image: mariadb:10.11
+    container_name: testgen-mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=testgen
+      - MYSQL_USER=testgen_user
+      - MYSQL_PASSWORD=testgen_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7.2-alpine
+    container_name: testgen-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - testgen-network
+    restart: unless-stopped
+
+  # Ollama (AI Model)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: testgen-ollama
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - testgen-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+networks:
+  testgen-network:
+    driver: bridge
+
+volumes:
+  mariadb-data:
+  redis-data:
+  ollama-data:

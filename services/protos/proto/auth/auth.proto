@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "github.com/testgen/auth/authv1";
+
+// User представляет пользователя системы
+message User {
+  int64 id = 1;
+  string email = 2;
+  string full_name = 3;
+  bool is_active = 4;
+  repeated string roles = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+// RegisterRequest - запрос на регистрацию нового пользователя
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string full_name = 3;
+}
+
+// RegisterResponse - ответ на регистрацию
+message RegisterResponse {
+  User user = 1;
+  string token = 2;
+  string message = 3;
+}
+
+// LoginRequest - запрос на авторизацию
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// LoginResponse - ответ на авторизацию
+message LoginResponse {
+  User user = 1;
+  string token = 2;
+  int64 expires_at = 3;
+}
+
+// VerifyTokenRequest - запрос на проверку токена
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+// VerifyTokenResponse - ответ на проверку токена
+message VerifyTokenResponse {
+  bool valid = 1;
+  User user = 2;
+  string error = 3;
+}
+
+// GetUserRequest - запрос на получение пользователя по ID
+message GetUserRequest {
+  int64 user_id = 1;
+}
+
+// GetUserResponse - ответ с данными пользователя
+message GetUserResponse {
+  User user = 1;
+}
+
+// ListUsersRequest - запрос на получение списка пользователей
+message ListUsersRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string role_filter = 3;
+  bool active_only = 4;
+}
+
+// ListUsersResponse - ответ со списком пользователей
+message ListUsersResponse {
+  repeated User users = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+// UpdateUserRequest - запрос на обновление пользователя
+message UpdateUserRequest {
+  int64 user_id = 1;
+  string full_name = 2;
+  string email = 3;
+  bool is_active = 4;
+  repeated string roles = 5;
+}
+
+// UpdateUserResponse - ответ на обновление пользователя
+message UpdateUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// DeleteUserRequest - запрос на удаление пользователя
+message DeleteUserRequest {
+  int64 user_id = 1;
+}
+
+// DeleteUserResponse - ответ на удаление пользователя
+message DeleteUserResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// AssignRoleRequest - запрос на назначение роли
+message AssignRoleRequest {
+  int64 user_id = 1;
+  string role = 2;
+}
+
+// AssignRoleResponse - ответ на назначение роли
+message AssignRoleResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// AuthService - сервис аутентификации и управления пользователями
+service AuthService {
+  // Регистрация нового пользователя
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Авторизация пользователя
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Проверка JWT токена
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+
+  // Получение пользователя по ID
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  // Получение списка пользователей
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+
+  // Обновление данных пользователя
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+
+  // Удаление пользователя
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+
+  // Назначение роли пользователю
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
+}
